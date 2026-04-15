@@ -14,7 +14,17 @@ public class EventService {
     public EventService(List<CollegeEvent> events) {
         this.events = new ArrayList<>(events);
     }
-
+    public List<CollegeEvent> getEventsSortedByTitle() {
+        return events.stream()
+                .sorted(Comparator.comparing(CollegeEvent::getTitle))
+                .toList();
+    }
+    public List<CollegeEvent> getEventsSortedByDateDesc() {
+        return events.stream()
+                .sorted(Comparator.comparing(CollegeEvent::getDate).reversed())
+                .toList();
+    }
+    
     public void addEvent(CollegeEvent event) {
         events.add(event);
     }

@@ -159,15 +159,17 @@ public class CollegeEventApp {
         int choice;
 
         do {
-            System.out.println("\n=== User Menu ===");
-            System.out.println("1. View Event");
-            System.out.println("2. View Venue");
-            System.out.println("3. Create Booking");
-            System.out.println("4. View My Booking");
-            System.out.println("5. Cancel My Booking");
-            System.out.println("6. View Upcoming Events");
-            System.out.println("0. Exit");
-            System.out.print("Enter choice: ");
+        	System.out.println("\n=== User Menu ===");
+        	System.out.println("1. View Event");
+        	System.out.println("2. View Venue");
+        	System.out.println("3. Create Booking");
+        	System.out.println("4. View My Booking");
+        	System.out.println("5. Cancel My Booking");
+        	System.out.println("6. View Upcoming Events");
+        	System.out.println("7. View Events Sorted by Title");
+        	System.out.println("8. View Venues Sorted by Capacity");
+        	System.out.println("0. Exit");
+        	System.out.print("Enter choice: ");
 
             choice = Integer.parseInt(sc.nextLine());
 
@@ -218,7 +220,8 @@ public class CollegeEventApp {
                 }
 
                 case 6 -> eventService.getUpcomingEvents().forEach(System.out::println);
-
+                case 7 -> eventService.getEventsSortedByTitle().forEach(System.out::println);
+                case 8 -> venueService.getVenuesSortedByCapacity().forEach(System.out::println);
                 case 0 -> System.out.println("Exiting...");
                 default -> System.out.println("Invalid choice.");
             }
