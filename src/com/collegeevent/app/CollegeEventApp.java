@@ -1,5 +1,5 @@
 package com.collegeevent.app;
-import com.collegeevent.features.EventLambdaService;
+
 import com.collegeevent.model.Admin;
 import com.collegeevent.model.CollegeEvent;
 import com.collegeevent.model.EventBooking;
@@ -29,7 +29,7 @@ public class CollegeEventApp {
         BookingService bookingService = new BookingService();
 
         Scanner sc = new Scanner(System.in);
-        EventLambdaService.processEventsWithLambdas(eventService.getAllEvents());
+
         System.out.println("=== College Event Booking System ===");
         System.out.println("Welcome to College Event Booking System....");
         System.out.print("Enter User name: ");
@@ -106,7 +106,7 @@ public class CollegeEventApp {
                     System.out.println("Venue added successfully.");
                 }
 
-                case 3 -> eventService.getAllEvents().forEach(System.out::println);
+                case 3 -> eventService.printAllEvents();
                 case 4 -> venueService.getAllVenues().forEach(System.out::println);
                 case 5 -> bookingService.getAllBookings().forEach(System.out::println);
 
@@ -159,22 +159,25 @@ public class CollegeEventApp {
         int choice;
 
         do {
-        	System.out.println("\n=== User Menu ===");
-        	System.out.println("1. View Event");
-        	System.out.println("2. View Venue");
-        	System.out.println("3. Create Booking");
-        	System.out.println("4. View My Booking");
-        	System.out.println("5. Cancel My Booking");
-        	System.out.println("6. View Upcoming Events");
-        	System.out.println("7. View Events Sorted by Title");
-        	System.out.println("8. View Venues Sorted by Capacity");
-        	System.out.println("0. Exit");
-        	System.out.print("Enter choice: ");
+            System.out.println("\n=== User Menu ===");
+            System.out.println("1. View Event");
+            System.out.println("2. View Venue");
+            System.out.println("3. Create Booking");
+            System.out.println("4. View My Booking");
+            System.out.println("5. Cancel My Booking");
+            System.out.println("6. View Upcoming Events");
+            System.out.println("7. View Events Sorted by Title");
+            System.out.println("8. View Venues Sorted by Capacity");
+            System.out.println("9. Group Events by Category");
+            System.out.println("10. Partition Events (Future/Past)");
+            System.out.println("11. Map Events by ID");
+            System.out.println("0. Exit");
+            System.out.print("Enter choice: ");
 
             choice = Integer.parseInt(sc.nextLine());
 
             switch (choice) {
-                case 1 -> eventService.getAllEvents().forEach(System.out::println);
+                case 1 -> eventService.printAllEvents();
                 case 2 -> venueService.getAllVenues().forEach(System.out::println);
 
                 case 3 -> {
@@ -222,6 +225,31 @@ public class CollegeEventApp {
                 case 6 -> eventService.getUpcomingEvents().forEach(System.out::println);
                 case 7 -> eventService.getEventsSortedByTitle().forEach(System.out::println);
                 case 8 -> venueService.getVenuesSortedByCapacity().forEach(System.out::println);
+
+                case 9 -> {
+                    var grouped = eventService.groupEventsByCategory();
+                    grouped.forEach((category, list) -> {
+                        System.out.println("\n" + category + ":");
+                        list.forEach(System.out::println);
+                    });
+                }
+
+                case 10 -> {
+                    var partitioned = eventService.partitionEventsByDate();
+
+                    System.out.println("\nFuture Events:");
+                    partitioned.get(true).forEach(System.out::println);
+
+                    System.out.println("\nPast Events:");
+                    partitioned.get(false).forEach(System.out::println);
+                }
+
+                case 11 -> {
+                    var eventMap = eventService.mapEventsById();
+                    eventMap.forEach((id, event) ->
+                            System.out.println("ID: " + id + " -> " + event));
+                }
+
                 case 0 -> System.out.println("Exiting...");
                 default -> System.out.println("Invalid choice.");
             }

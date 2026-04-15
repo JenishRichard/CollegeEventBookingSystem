@@ -16,12 +16,14 @@ public class VenueService {
     public void addVenue(Venue venue) {
         venues.add(venue);
     }
+
+    public List<Venue> getAllVenues() {
+        return new ArrayList<>(venues);
+    }
+
     public List<Venue> getVenuesSortedByCapacity() {
         return venues.stream()
                 .sorted(Comparator.comparing(Venue::capacity))
                 .toList();
-    }
-    public List<Venue> getAllVenues() {
-        return new ArrayList<>(venues);
     }
 }
