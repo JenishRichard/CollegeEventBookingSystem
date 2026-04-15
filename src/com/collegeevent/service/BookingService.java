@@ -16,7 +16,9 @@ public class BookingService {
 
     private final List<EventBooking> bookings = new ArrayList<>();
     private int bookingCounter = 1;
-
+    public BookingService() {
+        System.out.println("Booking Service Initialised");
+    }
     private final Supplier<String> bookingIdSupplier =
             () -> "B" + bookingCounter++;
 

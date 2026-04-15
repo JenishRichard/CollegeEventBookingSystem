@@ -1,6 +1,7 @@
 package com.collegeevent.app;
 
 import com.collegeevent.features.ConcurrencyService;
+import com.collegeevent.features.UserContextService.UserContextService;
 import com.collegeevent.io.FileStorageService;
 import com.collegeevent.localisation.MessageService;
 import com.collegeevent.model.Admin;
@@ -52,6 +53,9 @@ public class CollegeEventApp {
         }
 
         User currentUser = loggedInUser.get();
+
+        UserContextService.setCurrentUser(currentUser.getUsername());
+
         System.out.println(messageService.getMessage("login.success") + ". Welcome " + currentUser.getName());
 
         if (currentUser.getRole().equals("ADMIN")) {
@@ -60,6 +64,7 @@ public class CollegeEventApp {
             showUserMenu(sc, currentUser, venueService, eventService, bookingService);
         }
 
+        UserContextService.clear();
         sc.close();
     }
 
@@ -70,6 +75,7 @@ public class CollegeEventApp {
 
         do {
             System.out.println("\n=== Admin Menu ===");
+            System.out.println("User: " + UserContextService.getCurrentUser());
             System.out.println("1. Add Event");
             System.out.println("2. Add Venue");
             System.out.println("3. View Event");
@@ -205,6 +211,7 @@ public class CollegeEventApp {
 
         do {
             System.out.println("\n=== User Menu ===");
+            System.out.println("User: " + UserContextService.getCurrentUser());
             System.out.println("1. View Event");
             System.out.println("2. View Venue");
             System.out.println("3. Create Booking");
