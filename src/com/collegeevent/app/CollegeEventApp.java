@@ -1,5 +1,5 @@
 package com.collegeevent.app;
-
+import com.collegeevent.features.EventLambdaService;
 import com.collegeevent.model.Admin;
 import com.collegeevent.model.CollegeEvent;
 import com.collegeevent.model.EventBooking;
@@ -29,7 +29,7 @@ public class CollegeEventApp {
         BookingService bookingService = new BookingService();
 
         Scanner sc = new Scanner(System.in);
-
+        EventLambdaService.processEventsWithLambdas(eventService.getAllEvents());
         System.out.println("=== College Event Booking System ===");
         System.out.println("Welcome to College Event Booking System....");
         System.out.print("Enter User name: ");
