@@ -1,5 +1,8 @@
 package com.collegeevent.app;
 
+import com.collegeevent.features.ConcurrencyService;
+import com.collegeevent.io.FileStorageService;
+import com.collegeevent.localisation.MessageService;
 import com.collegeevent.model.Admin;
 import com.collegeevent.model.CollegeEvent;
 import com.collegeevent.model.EventBooking;
@@ -17,6 +20,7 @@ import com.collegeevent.util.SampleDataUtil;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Scanner;
 
@@ -29,9 +33,10 @@ public class CollegeEventApp {
         BookingService bookingService = new BookingService();
 
         Scanner sc = new Scanner(System.in);
+        MessageService messageService = new MessageService(Locale.ENGLISH);
 
         System.out.println("=== College Event Booking System ===");
-        System.out.println("Welcome to College Event Booking System....");
+        System.out.println(messageService.getMessage("welcome"));
         System.out.print("Enter User name: ");
         String username = sc.nextLine();
 
@@ -41,13 +46,13 @@ public class CollegeEventApp {
         Optional<User> loggedInUser = userService.login(username, password);
 
         if (loggedInUser.isEmpty()) {
-            System.out.println("Invalid username or password.");
+            System.out.println(messageService.getMessage("invalid.login"));
             sc.close();
             return;
         }
 
         User currentUser = loggedInUser.get();
-        System.out.println("Login successful. Welcome " + currentUser.getName());
+        System.out.println(messageService.getMessage("login.success") + ". Welcome " + currentUser.getName());
 
         if (currentUser.getRole().equals("ADMIN")) {
             showAdminMenu(sc, currentUser, userService, venueService, eventService, bookingService);
@@ -72,6 +77,9 @@ public class CollegeEventApp {
             System.out.println("5. View Booking");
             System.out.println("6. Cancel Booking");
             System.out.println("7. Add User");
+            System.out.println("8. Run Concurrent Booking Simulation");
+            System.out.println("9. Save Bookings to File");
+            System.out.println("10. Read Bookings from File");
             System.out.println("0. Exit");
             System.out.print("Enter choice: ");
 
@@ -107,7 +115,9 @@ public class CollegeEventApp {
                 }
 
                 case 3 -> eventService.printAllEvents();
+
                 case 4 -> venueService.getAllVenues().forEach(System.out::println);
+
                 case 5 -> bookingService.getAllBookings().forEach(System.out::println);
 
                 case 6 -> {
@@ -146,6 +156,41 @@ public class CollegeEventApp {
                     }
                 }
 
+                case 8 -> {
+                    List<User> users = userService.getAllUsers().stream()
+                            .filter(user -> !user.getRole().equals("ADMIN"))
+                            .toList();
+
+                    List<CollegeEvent> events = eventService.getAllEvents();
+                    List<Venue> venues = venueService.getAllVenues();
+
+                    if (users.isEmpty() || events.isEmpty() || venues.isEmpty()) {
+                        System.out.println("Need users, events, and venues to run simulation.");
+                        break;
+                    }
+
+                    ConcurrencyService concurrencyService = new ConcurrencyService();
+                    List<EventBooking> results = concurrencyService.simulateConcurrentBookings(
+                            bookingService,
+                            users,
+                            events.get(0),
+                            venues.get(0)
+                    );
+
+                    System.out.println("Concurrent booking simulation completed:");
+                    results.forEach(System.out::println);
+                }
+
+                case 9 -> {
+                    FileStorageService fileStorageService = new FileStorageService();
+                    fileStorageService.saveBookings(bookingService.getAllBookings());
+                }
+
+                case 10 -> {
+                    FileStorageService fileStorageService = new FileStorageService();
+                    fileStorageService.readBookingsFromFile();
+                }
+
                 case 0 -> System.out.println("Exiting...");
                 default -> System.out.println("Invalid choice.");
             }
@@ -178,6 +223,7 @@ public class CollegeEventApp {
 
             switch (choice) {
                 case 1 -> eventService.printAllEvents();
+
                 case 2 -> venueService.getAllVenues().forEach(System.out::println);
 
                 case 3 -> {
@@ -223,7 +269,9 @@ public class CollegeEventApp {
                 }
 
                 case 6 -> eventService.getUpcomingEvents().forEach(System.out::println);
+
                 case 7 -> eventService.getEventsSortedByTitle().forEach(System.out::println);
+
                 case 8 -> venueService.getVenuesSortedByCapacity().forEach(System.out::println);
 
                 case 9 -> {
