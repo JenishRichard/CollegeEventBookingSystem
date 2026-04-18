@@ -1,10 +1,10 @@
 package com.collegeevent.service;
 
-import com.collegeevent.model.User;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import com.collegeevent.model.User;
 
 public class UserService {
     private final List<User> users;

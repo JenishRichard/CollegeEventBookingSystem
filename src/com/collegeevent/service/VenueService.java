@@ -1,10 +1,12 @@
 package com.collegeevent.service;
 
-import com.collegeevent.model.Venue;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+
+import com.collegeevent.model.Venue;
 
 public class VenueService {
     private final List<Venue> venues;
@@ -25,5 +27,11 @@ public class VenueService {
         return venues.stream()
                 .sorted(Comparator.comparing(Venue::capacity))
                 .toList();
+    }
+
+    public Set<Integer> getUniqueSortedCapacities() {
+        return venues.stream()
+                .map(Venue::capacity)
+                .collect(java.util.stream.Collectors.toCollection(TreeSet::new));
     }
 }

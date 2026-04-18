@@ -1,4 +1,4 @@
-package com.collegeevent.features.UserContextService;
+package com.collegeevent.features.usercontext;
 
 public class UserContextService {
 

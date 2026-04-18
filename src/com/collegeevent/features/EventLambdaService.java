@@ -1,12 +1,12 @@
 package com.collegeevent.features;
 
-import com.collegeevent.model.CollegeEvent;
-
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import com.collegeevent.model.CollegeEvent;
 
 public class EventLambdaService {
 
@@ -19,10 +19,10 @@ public class EventLambdaService {
                 CollegeEvent::getTitle;
 
         Consumer<String> printTitle =
-                title -> System.out.println("Event Title: " + title);
+                title -> System.out.println("- " + title);
 
         Supplier<String> message =
-                () -> "\n=== Processing Events Using Lambdas ===";
+                () -> "Featured seminar events:";
 
         System.out.println(message.get());
 

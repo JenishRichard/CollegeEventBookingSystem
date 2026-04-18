@@ -1,11 +1,6 @@
 package com.collegeevent.features;
 
-import com.collegeevent.model.CollegeEvent;
-import com.collegeevent.model.EventBooking;
-import com.collegeevent.model.User;
-import com.collegeevent.model.Venue;
-import com.collegeevent.service.BookingService;
-
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -13,6 +8,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
+import com.collegeevent.model.CollegeEvent;
+import com.collegeevent.model.EventBooking;
+import com.collegeevent.model.User;
+import com.collegeevent.model.Venue;
+import com.collegeevent.service.BookingService;
 
 public class ConcurrencyService {
 
@@ -24,9 +25,20 @@ public class ConcurrencyService {
     ) {
         ExecutorService executorService = Executors.newFixedThreadPool(3);
         List<Callable<EventBooking>> tasks = new ArrayList<>();
+        LocalTime nextAvailableTime = LocalTime.of(10, 0);
 
-        for (User user : users) {
-            tasks.add(new BookingTask(bookingService, user, event, venue));
+        for (int index = 0; index < users.size(); index++) {
+            User user = users.get(index);
+            nextAvailableTime = bookingService.getNextAvailableTime(venue, event.getDate(), nextAvailableTime);
+            tasks.add(new BookingTask(
+                    bookingService,
+                    user,
+                    event,
+                    venue,
+                    event.getDate(),
+                    nextAvailableTime
+            ));
+            nextAvailableTime = nextAvailableTime.plusHours(1);
         }
 
         List<EventBooking> results = new ArrayList<>();
