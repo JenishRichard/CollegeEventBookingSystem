@@ -29,6 +29,10 @@ public class MessageService {
         return messages.getString(key);
     }
 
+    public String getMessage(String key, Object... values) {
+        return getMessage(key).formatted(values);
+    }
+
     public Locale getActiveLocale() {
         return activeLocale;
     }

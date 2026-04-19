@@ -2,7 +2,11 @@ package com.collegeevent.app;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.Period;
+import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Scanner;
 
@@ -15,6 +19,7 @@ import com.collegeevent.io.FileStorageService;
 import com.collegeevent.localisation.MessageService;
 import com.collegeevent.model.Admin;
 import com.collegeevent.model.BookingPurpose;
+import com.collegeevent.model.BookingStatus;
 import com.collegeevent.model.CollegeEvent;
 import com.collegeevent.model.EventBooking;
 import com.collegeevent.model.EventCategory;
@@ -39,12 +44,13 @@ public class CollegeEventApp {
         BookingService bookingService = new BookingService();
 
         try (Scanner sc = new Scanner(System.in)) {
-            while (true) {
-                MessageService messageService = new MessageService();
+            Locale selectedLocale = selectLocale(sc);
+            MessageService messageService = new MessageService(selectedLocale);
 
-                System.out.println("=== College Event Booking System ===");
+            while (true) {
+                System.out.println("=== " + messageService.getMessage("app.title") + " ===");
                 System.out.println(messageService.getMessage("welcome"));
-                System.out.println("Enter EXIT at the username prompt to close the application.");
+                System.out.println(messageService.getMessage("exit.hint"));
                 System.out.print(messageService.getMessage("prompt.username"));
                 String username = sc.nextLine().trim();
 
@@ -67,23 +73,51 @@ public class CollegeEventApp {
                 User currentUser = loggedInUser.get();
                 UserContextService.setCurrentUser(currentUser.getUsername());
 
-                System.out.println(messageService.getMessage("login.success") + ". Welcome " + currentUser.getName());
-                System.out.println(UserUtils.describeUser(currentUser));
+                System.out.println(messageService.getMessage("login.success.user", currentUser.getName()));
+                System.out.println(UserUtils.describeUser(currentUser, messageService));
                 UserContextManager.runWithUser(currentUser.getUsername(), () ->
                         System.out.println(messageService.getMessage("scoped.user") + ": "
                                 + UserContextManager.getCurrentUser()));
 
                 try {
                     if (currentUser.getRole().equals("ADMIN")) {
-                        showAdminMenu(sc, currentUser, userService, venueService, eventService, bookingService);
+                        showAdminMenu(
+                                sc,
+                                currentUser,
+                                userService,
+                                venueService,
+                                eventService,
+                                bookingService,
+                                messageService);
                     } else {
-                        showUserMenu(sc, currentUser, venueService, eventService, bookingService);
+                        showUserMenu(sc, currentUser, venueService, eventService, bookingService, messageService);
                     }
                 } finally {
                     UserContextService.clear();
                 }
 
-                System.out.println("\nSession ended. Returning to the login page...\n");
+                System.out.println("\n" + messageService.getMessage("session.ended") + "\n");
+            }
+        }
+    }
+
+    private static Locale selectLocale(Scanner sc) {
+        while (true) {
+            System.out.println("Choose language / Roghnaigh teanga:");
+            System.out.println("1. English");
+            System.out.println("2. Irish");
+            System.out.print("Enter choice / Iontráil rogha: ");
+
+            String choice = sc.nextLine().trim();
+
+            switch (choice) {
+                case "1" -> {
+                    return Locale.ENGLISH;
+                }
+                case "2" -> {
+                    return Locale.forLanguageTag("ga-IE");
+                }
+                default -> System.out.println("Invalid choice / Rogha neamhbhailí. Please enter 1 or 2.");
             }
         }
     }
@@ -94,38 +128,39 @@ public class CollegeEventApp {
             UserService userService,
             VenueService venueService,
             EventService eventService,
-            BookingService bookingService) {
+            BookingService bookingService,
+            MessageService messageService) {
 
         int choice = -1;
 
         do {
-            System.out.println("\n=== Admin Menu ===");
-            System.out.println("User: " + UserContextService.getCurrentUser());
-            System.out.println("1. Add Event");
-            System.out.println("2. Add Venue");
-            System.out.println("3. Add User");
-            System.out.println("4. Manage Bookings");
-            System.out.println("5. Save Booking Records");
-            System.out.println("6. Run Booking Operations");
-            System.out.println("0. Logout");
-            System.out.print("Enter choice: ");
+            System.out.println("\n=== " + messageService.getMessage("menu.admin.title") + " ===");
+            System.out.println(messageService.getMessage("label.user") + ": " + UserContextService.getCurrentUser());
+            System.out.println("1. " + messageService.getMessage("menu.admin.add.event"));
+            System.out.println("2. " + messageService.getMessage("menu.admin.add.venue"));
+            System.out.println("3. " + messageService.getMessage("menu.admin.add.user"));
+            System.out.println("4. " + messageService.getMessage("menu.admin.manage.bookings"));
+            System.out.println("5. " + messageService.getMessage("menu.admin.save.bookings"));
+            System.out.println("6. " + messageService.getMessage("menu.admin.run.operations"));
+            System.out.println("0. " + messageService.getMessage("menu.logout"));
+            System.out.print(messageService.getMessage("prompt.choice"));
 
             try {
                 choice = Integer.parseInt(sc.nextLine());
             } catch (NumberFormatException e) {
-                System.out.println("Invalid input. Try again.");
+                System.out.println(messageService.getMessage("invalid.input"));
                 continue;
             }
 
             switch (choice) {
-                case 1 -> addEvent(sc, eventService);
-                case 2 -> addVenue(sc, venueService);
-                case 3 -> addUser(sc, userService);
-                case 4 -> manageAllBookings(sc, currentUser, bookingService);
-                case 5 -> saveBookingRecords(bookingService);
-                case 6 -> runBookingOperations(bookingService, userService, eventService, venueService);
-                case 0 -> System.out.println("Logging out...");
-                default -> System.out.println("Invalid choice.");
+                case 1 -> addEvent(sc, eventService, messageService);
+                case 2 -> addVenue(sc, venueService, messageService);
+                case 3 -> addUser(sc, userService, messageService);
+                case 4 -> manageAllBookings(sc, currentUser, bookingService, messageService);
+                case 5 -> saveBookingRecords(bookingService, messageService);
+                case 6 -> runBookingOperations(bookingService, userService, eventService, venueService, messageService);
+                case 0 -> System.out.println(messageService.getMessage("logout.in.progress"));
+                default -> System.out.println(messageService.getMessage("invalid.choice"));
             }
 
         } while (choice != 0);
@@ -136,92 +171,93 @@ public class CollegeEventApp {
             User currentUser,
             VenueService venueService,
             EventService eventService,
-            BookingService bookingService) {
+            BookingService bookingService,
+            MessageService messageService) {
 
         int choice = -1;
 
         do {
-            System.out.println("\n=== User Menu ===");
-            System.out.println("User: " + UserContextService.getCurrentUser());
-            System.out.println("1. Browse Events");
-            System.out.println("2. Browse Venues");
-            System.out.println("3. Create Booking");
-            System.out.println("4. Manage My Bookings");
-            System.out.println("5. View Event Insights");
-            System.out.println("0. Logout");
-            System.out.print("Enter choice: ");
+            System.out.println("\n=== " + messageService.getMessage("menu.user.title") + " ===");
+            System.out.println(messageService.getMessage("label.user") + ": " + UserContextService.getCurrentUser());
+            System.out.println("1. " + messageService.getMessage("menu.user.browse.events"));
+            System.out.println("2. " + messageService.getMessage("menu.user.browse.venues"));
+            System.out.println("3. " + messageService.getMessage("menu.user.create.booking"));
+            System.out.println("4. " + messageService.getMessage("menu.user.manage.bookings"));
+            System.out.println("5. " + messageService.getMessage("menu.user.event.insights"));
+            System.out.println("0. " + messageService.getMessage("menu.logout"));
+            System.out.print(messageService.getMessage("prompt.choice"));
 
             try {
                 choice = Integer.parseInt(sc.nextLine());
             } catch (NumberFormatException e) {
-                System.out.println("Invalid input. Try again.");
+                System.out.println(messageService.getMessage("invalid.input"));
                 continue;
             }
 
             switch (choice) {
-                case 1 -> showUpcomingEvents(eventService);
-                case 2 -> showVenues(venueService, bookingService);
-                case 3 -> createBooking(sc, currentUser, venueService, eventService, bookingService);
-                case 4 -> manageUserBookings(sc, currentUser, bookingService);
-                case 5 -> showEventInsights(currentUser, eventService, venueService, bookingService);
-                case 0 -> System.out.println("Logging out...");
-                default -> System.out.println("Invalid choice.");
+                case 1 -> showUpcomingEvents(eventService, messageService);
+                case 2 -> showVenues(venueService, bookingService, messageService);
+                case 3 -> createBooking(sc, currentUser, venueService, eventService, bookingService, messageService);
+                case 4 -> manageUserBookings(sc, currentUser, bookingService, messageService);
+                case 5 -> showEventInsights(currentUser, eventService, venueService, bookingService, messageService);
+                case 0 -> System.out.println(messageService.getMessage("logout.in.progress"));
+                default -> System.out.println(messageService.getMessage("invalid.choice"));
             }
 
         } while (choice != 0);
     }
 
-    private static void addEvent(Scanner sc, EventService eventService) {
-        System.out.print("Enter event id: ");
+    private static void addEvent(Scanner sc, EventService eventService, MessageService messageService) {
+        System.out.print(messageService.getMessage("prompt.event.id"));
         String eventId = sc.nextLine();
 
-        System.out.print("Enter event title: ");
+        System.out.print(messageService.getMessage("prompt.event.title"));
         String title = sc.nextLine();
 
-        System.out.print("Enter category (SEMINAR, WORKSHOP, CULTURAL, SPORTS): ");
+        System.out.print(messageService.getMessage("prompt.event.category"));
         EventCategory category = EventCategory.valueOf(sc.nextLine().toUpperCase());
 
-        System.out.print("Enter event date (YYYY-MM-DD): ");
+        System.out.print(messageService.getMessage("prompt.event.date"));
         LocalDate date = LocalDate.parse(sc.nextLine());
 
         eventService.addEvent(new CollegeEvent(eventId, title, category, date));
-        System.out.println("Event added successfully.");
+        System.out.println(messageService.getMessage("event.added"));
     }
 
-    private static void addVenue(Scanner sc, VenueService venueService) {
-        System.out.print("Enter venue id: ");
+    private static void addVenue(Scanner sc, VenueService venueService, MessageService messageService) {
+        System.out.print(messageService.getMessage("prompt.venue.id"));
         String venueId = sc.nextLine();
 
-        System.out.print("Enter venue name: ");
+        System.out.print(messageService.getMessage("prompt.venue.name"));
         String name = sc.nextLine();
 
-        System.out.print("Enter capacity: ");
+        System.out.print(messageService.getMessage("prompt.venue.capacity"));
         int capacity = Integer.parseInt(sc.nextLine());
 
-        System.out.print("Enter venue type (CLASSROOM, SEMINAR_HALL, AUDITORIUM, LAB): ");
+        System.out.print(messageService.getMessage("prompt.venue.type"));
         VenueType type = VenueType.valueOf(sc.nextLine().toUpperCase());
 
         venueService.addVenue(new Venue(venueId, name, capacity, type));
-        System.out.println("Venue added successfully.");
+        System.out.println(messageService.getMessage("venue.added"));
     }
 
-    private static void addUser(Scanner sc, UserService userService) {
-        System.out.print("Enter role (ADMIN, STUDENT, STAFF): ");
+    private static void addUser(Scanner sc, UserService userService, MessageService messageService) {
+        System.out.print(messageService.getMessage("prompt.role"));
         String role = sc.nextLine().toUpperCase();
 
-        System.out.print("Enter user id: ");
+        System.out.print(messageService.getMessage("prompt.user.id"));
         String id = sc.nextLine();
 
-        System.out.print("Enter name: ");
+        System.out.print(messageService.getMessage("prompt.name"));
         String name = sc.nextLine();
 
-        System.out.print("Enter username: ");
+        System.out.print(messageService.getMessage("prompt.username"));
         String username = sc.nextLine();
 
-        System.out.print("Enter password: ");
+        System.out.print(messageService.getMessage("prompt.password"));
         String password = sc.nextLine();
 
-        System.out.print("Enter email: ");
+        System.out.print(messageService.getMessage("prompt.email"));
         String email = sc.nextLine();
 
         User user = switch (role) {
@@ -233,37 +269,43 @@ public class CollegeEventApp {
 
         if (user != null) {
             userService.addUser(user);
-            System.out.println("User added successfully.");
+            System.out.println(messageService.getMessage("user.added"));
         } else {
-            System.out.println("Invalid role.");
+            System.out.println(messageService.getMessage("invalid.role"));
         }
     }
 
-    private static void showUpcomingEvents(EventService eventService) {
+    private static void showUpcomingEvents(EventService eventService, MessageService messageService) {
         List<CollegeEvent> upcomingEvents = eventService.getUpcomingEvents();
 
-        System.out.println("\n=== Event Catalogue ===");
+        System.out.println("\n=== " + messageService.getMessage("event.catalogue.title") + " ===");
         if (upcomingEvents.isEmpty()) {
-            System.out.println("No upcoming events are available.");
+            System.out.println(messageService.getMessage("events.none.upcoming"));
             return;
         }
 
-        upcomingEvents.forEach(System.out::println);
+        upcomingEvents.forEach(event -> System.out.println(formatEvent(event, messageService)));
 
         List<CollegeEvent> highlightedEvents = eventService.getTop2Events();
         if (!highlightedEvents.isEmpty()) {
-            System.out.println("\nHighlighted events:");
-            highlightedEvents.forEach(System.out::println);
+            System.out.println("\n" + messageService.getMessage("events.highlighted"));
+            highlightedEvents.forEach(event -> System.out.println(formatEvent(event, messageService)));
         }
     }
 
-    private static void showVenues(VenueService venueService, BookingService bookingService) {
-        System.out.println("\n=== Venue Directory ===");
+    private static void showVenues(
+            VenueService venueService,
+            BookingService bookingService,
+            MessageService messageService) {
+        System.out.println("\n=== " + messageService.getMessage("venue.directory.title") + " ===");
         venueService.getVenuesSortedByCapacity().forEach(venue -> {
-            System.out.println(venue);
-            System.out.println("  Suitable for: " + describeSupportedPurposes(venue, bookingService));
+            System.out.println(formatVenue(venue, messageService));
+            System.out.println("  " + messageService.getMessage("venue.suitable.for") + ": "
+                    + describeSupportedPurposes(venue, bookingService, messageService));
         });
-        System.out.println("Capacity options: " + venueService.getUniqueSortedCapacities());
+        System.out.println(messageService.getMessage(
+                "venue.capacity.options",
+                venueService.getUniqueSortedCapacities()));
     }
 
     private static void createBooking(
@@ -271,12 +313,14 @@ public class CollegeEventApp {
             User currentUser,
             VenueService venueService,
             EventService eventService,
-            BookingService bookingService) {
+            BookingService bookingService,
+            MessageService messageService) {
 
-        System.out.println("\n=== Create Booking ===");
-        System.out.println("Available venues:");
-        venueService.getVenuesSortedByCapacity().forEach(System.out::println);
-        System.out.print("Enter venue id: ");
+        System.out.println("\n=== " + messageService.getMessage("booking.create.title") + " ===");
+        System.out.println(messageService.getMessage("venues.available"));
+        venueService.getVenuesSortedByCapacity()
+                .forEach(venue -> System.out.println(formatVenue(venue, messageService)));
+        System.out.print(messageService.getMessage("prompt.venue.id"));
         String venueId = sc.nextLine();
 
         Venue selectedVenue = venueService.getAllVenues().stream()
@@ -285,13 +329,13 @@ public class CollegeEventApp {
                 .orElse(null);
 
         if (selectedVenue == null) {
-            System.out.println("Venue not found.");
+            System.out.println(messageService.getMessage("venue.not.found"));
             return;
         }
 
-        BookingPurpose bookingPurpose = promptForBookingPurpose(sc, selectedVenue, bookingService);
+        BookingPurpose bookingPurpose = promptForBookingPurpose(sc, selectedVenue, bookingService, messageService);
         if (bookingPurpose == null) {
-            System.out.println("Invalid booking type.");
+            System.out.println(messageService.getMessage("invalid.booking.type"));
             return;
         }
 
@@ -303,9 +347,10 @@ public class CollegeEventApp {
             CollegeEvent selectedEvent = null;
 
             if (bookingPurpose == BookingPurpose.EVENT) {
-                System.out.println("\nAvailable events:");
-                eventService.getUpcomingEvents().forEach(System.out::println);
-                System.out.print("Enter event id: ");
+                System.out.println("\n" + messageService.getMessage("events.available"));
+                eventService.getUpcomingEvents()
+                        .forEach(event -> System.out.println(formatEvent(event, messageService)));
+                System.out.print(messageService.getMessage("prompt.event.id"));
                 eventId = sc.nextLine();
                 String selectedEventId = eventId;
 
@@ -315,22 +360,22 @@ public class CollegeEventApp {
                         .orElse(null);
 
                 if (selectedEvent == null) {
-                    System.out.println("Event not found.");
+                    System.out.println(messageService.getMessage("event.not.found"));
                     return;
                 }
 
                 bookingDate = selectedEvent.getDate();
-                System.out.println("Booking date set to event date: " + bookingDate);
-                System.out.print("Enter booking time (HH:MM): ");
+                System.out.println(messageService.getMessage("booking.date.uses.event", bookingDate));
+                System.out.print(messageService.getMessage("prompt.booking.time"));
                 bookingTime = LocalTime.parse(sc.nextLine());
             } else {
-                System.out.print("Enter booking date (YYYY-MM-DD): ");
+                System.out.print(messageService.getMessage("prompt.booking.date"));
                 bookingDate = LocalDate.parse(sc.nextLine());
 
-                System.out.print("Enter booking time (HH:MM): ");
+                System.out.print(messageService.getMessage("prompt.booking.time"));
                 bookingTime = LocalTime.parse(sc.nextLine());
 
-                System.out.print("Enter booking title: ");
+                System.out.print(messageService.getMessage("prompt.booking.title"));
                 bookingTitle = sc.nextLine();
             }
 
@@ -358,23 +403,27 @@ public class CollegeEventApp {
                     bookingRequest.getBookingTime(),
                     selectedEvent
             );
-            System.out.println("Booking created successfully: " + booking);
+            System.out.println(messageService.getMessage("booking.created", formatBooking(booking, messageService)));
         } catch (RuntimeException e) {
-            System.out.println("Booking could not be created: " + e.getMessage());
+            System.out.println(messageService.getMessage("booking.create.failed", e.getMessage()));
         }
     }
 
-    private static void manageUserBookings(Scanner sc, User currentUser, BookingService bookingService) {
+    private static void manageUserBookings(
+            Scanner sc,
+            User currentUser,
+            BookingService bookingService,
+            MessageService messageService) {
         List<EventBooking> myBookings = bookingService.getBookingsByUser(currentUser);
 
-        System.out.println("\n=== My Bookings ===");
+        System.out.println("\n=== " + messageService.getMessage("booking.mine.title") + " ===");
         if (myBookings.isEmpty()) {
-            System.out.println("You do not have any bookings yet.");
+            System.out.println(messageService.getMessage("bookings.none.mine"));
             return;
         }
 
-        myBookings.forEach(System.out::println);
-        System.out.print("\nEnter a booking id to cancel, or press Enter to return: ");
+        myBookings.forEach(booking -> System.out.println(formatBooking(booking, messageService)));
+        System.out.print("\n" + messageService.getMessage("prompt.cancel.booking"));
         String bookingId = sc.nextLine().trim();
 
         if (bookingId.isBlank()) {
@@ -382,20 +431,26 @@ public class CollegeEventApp {
         }
 
         boolean cancelled = bookingService.cancelBooking(bookingId, currentUser);
-        System.out.println(cancelled ? "Booking cancelled." : "Booking not found or not allowed.");
+        System.out.println(cancelled
+                ? messageService.getMessage("booking.cancelled")
+                : messageService.getMessage("booking.not.found.or.not.allowed"));
     }
 
-    private static void manageAllBookings(Scanner sc, User currentUser, BookingService bookingService) {
+    private static void manageAllBookings(
+            Scanner sc,
+            User currentUser,
+            BookingService bookingService,
+            MessageService messageService) {
         List<EventBooking> allBookings = bookingService.getAllBookings();
 
-        System.out.println("\n=== Booking Directory ===");
+        System.out.println("\n=== " + messageService.getMessage("booking.directory.title") + " ===");
         if (allBookings.isEmpty()) {
-            System.out.println("There are no bookings to manage.");
+            System.out.println(messageService.getMessage("bookings.none.manage"));
             return;
         }
 
-        allBookings.forEach(System.out::println);
-        System.out.print("\nEnter a booking id to cancel, or press Enter to return: ");
+        allBookings.forEach(booking -> System.out.println(formatBooking(booking, messageService)));
+        System.out.print("\n" + messageService.getMessage("prompt.cancel.booking"));
         String bookingId = sc.nextLine().trim();
 
         if (bookingId.isBlank()) {
@@ -403,27 +458,30 @@ public class CollegeEventApp {
         }
 
         boolean cancelled = bookingService.cancelBooking(bookingId, currentUser);
-        System.out.println(cancelled ? "Booking cancelled." : "Booking not found.");
+        System.out.println(cancelled
+                ? messageService.getMessage("booking.cancelled")
+                : messageService.getMessage("booking.not.found"));
     }
 
-    private static void saveBookingRecords(BookingService bookingService) {
-        System.out.println("\n=== Save Booking Records ===");
+    private static void saveBookingRecords(BookingService bookingService, MessageService messageService) {
+        System.out.println("\n=== " + messageService.getMessage("booking.save.title") + " ===");
         if (bookingService.getAllBookings().isEmpty()) {
-            System.out.println("There are no bookings to save.");
+            System.out.println(messageService.getMessage("bookings.none.save"));
             return;
         }
 
         FileStorageService fileStorageService = new FileStorageService();
-        fileStorageService.saveBookings(bookingService.getAllBookings());
+        fileStorageService.saveBookings(bookingService.getAllBookings(), messageService);
     }
 
     private static void runBookingOperations(
             BookingService bookingService,
             UserService userService,
             EventService eventService,
-            VenueService venueService) {
+            VenueService venueService,
+            MessageService messageService) {
 
-        System.out.println("\n=== Booking Operations ===");
+        System.out.println("\n=== " + messageService.getMessage("booking.operations.title") + " ===");
         List<User> users = userService.getAllUsers().stream()
                 .filter(user -> !user.getRole().equals("ADMIN"))
                 .toList();
@@ -432,11 +490,11 @@ public class CollegeEventApp {
         List<Venue> venues = venueService.getAllVenues();
 
         if (users.isEmpty() || events.isEmpty() || venues.isEmpty()) {
-            System.out.println("Users, events, and venues are required before processing bookings.");
+            System.out.println(messageService.getMessage("booking.operations.missing.data"));
             return;
         }
 
-        ConcurrencyService concurrencyService = new ConcurrencyService();
+        ConcurrencyService concurrencyService = new ConcurrencyService(messageService);
         List<EventBooking> results = concurrencyService.simulateConcurrentBookings(
                 bookingService,
                 users,
@@ -444,90 +502,126 @@ public class CollegeEventApp {
                 venues.get(0)
         );
 
-        System.out.println("Processed " + results.size() + " booking request(s) in parallel.");
-        results.forEach(System.out::println);
+        System.out.println(messageService.getMessage("booking.operations.processed", results.size()));
+        results.forEach(booking -> System.out.println(formatBooking(booking, messageService)));
     }
 
     private static void showEventInsights(
             User currentUser,
             EventService eventService,
             VenueService venueService,
-            BookingService bookingService) {
+            BookingService bookingService,
+            MessageService messageService) {
 
         List<CollegeEvent> upcomingEvents = eventService.getUpcomingEvents();
         var eventsByCategory = eventService.groupEventsByCategory();
         var partitionedEvents = eventService.partitionEventsByDate();
         var eventLookup = eventService.mapEventsById();
 
-        System.out.println("\n=== Event Insights ===");
-        System.out.println("Profile: " + UserUtils.describeUser(currentUser));
+        System.out.println("\n=== " + messageService.getMessage("event.insights.title") + " ===");
+        System.out.println(messageService.getMessage(
+                "profile.summary",
+                UserUtils.describeUser(currentUser, messageService)));
 
-        System.out.println("\nUpcoming schedule:");
+        System.out.println("\n" + messageService.getMessage("upcoming.schedule"));
         if (upcomingEvents.isEmpty()) {
-            System.out.println("No upcoming events are scheduled.");
+            System.out.println(messageService.getMessage("events.none.scheduled"));
         } else {
-            upcomingEvents.forEach(System.out::println);
+            upcomingEvents.forEach(event -> System.out.println(formatEvent(event, messageService)));
         }
 
-        System.out.println("\nPlanning snapshot:");
-        System.out.println("- Total events: " + eventService.countEvents());
-        System.out.println("- Upcoming or current events: " + partitionedEvents.get(true).size());
-        System.out.println("- Past events: " + partitionedEvents.get(false).size());
-        System.out.println("- Next event: " + (upcomingEvents.isEmpty() ? "None" : upcomingEvents.get(0)));
-        System.out.println("- Latest scheduled event: " + eventService.getLatestEvent().orElse(null));
-        System.out.println("- First listed event: " + eventService.findFirstEvent().orElse(null));
-        System.out.println("- Spotlight event: " + eventService.findAnyEvent().orElse(null));
-        System.out.println("- Workshop available: " + yesNo(eventService.anyWorkshopEvent()));
-        System.out.println("- All events are future dated: " + yesNo(eventService.allEventsAreFuture()));
-        System.out.println("- Past events already exist: " + yesNo(!eventService.noPastEvents()));
+        System.out.println("\n" + messageService.getMessage("planning.snapshot"));
+        System.out.println("- " + messageService.getMessage("insight.total.events", eventService.countEvents()));
+        System.out.println("- " + messageService.getMessage(
+                "insight.upcoming.current.events",
+                partitionedEvents.get(true).size()));
+        System.out.println("- " + messageService.getMessage(
+                "insight.past.events",
+                partitionedEvents.get(false).size()));
+        System.out.println("- " + messageService.getMessage(
+                "insight.next.event",
+                upcomingEvents.isEmpty()
+                        ? messageService.getMessage("label.none")
+                        : formatEvent(upcomingEvents.get(0), messageService)));
+        System.out.println("- " + messageService.getMessage(
+                "insight.latest.event",
+                formatEventOrNone(eventService.getLatestEvent(), messageService)));
+        System.out.println("- " + messageService.getMessage(
+                "insight.first.event",
+                formatEventOrNone(eventService.findFirstEvent(), messageService)));
+        System.out.println("- " + messageService.getMessage(
+                "insight.spotlight.event",
+                formatEventOrNone(eventService.findAnyEvent(), messageService)));
+        System.out.println("- " + messageService.getMessage(
+                "insight.workshop.available",
+                yesNo(eventService.anyWorkshopEvent(), messageService)));
+        System.out.println("- " + messageService.getMessage(
+                "insight.all.future",
+                yesNo(eventService.allEventsAreFuture(), messageService)));
+        System.out.println("- " + messageService.getMessage(
+                "insight.past.exist",
+                yesNo(!eventService.noPastEvents(), messageService)));
 
-        System.out.println("\nCategory overview:");
+        System.out.println("\n" + messageService.getMessage("category.overview"));
         eventsByCategory.entrySet().stream()
                 .sorted((first, second) -> first.getKey().compareTo(second.getKey()))
                 .forEach(entry -> System.out.println(
-                        "- " + formatLabel(entry.getKey().name()) + ": " + entry.getValue().size() + " event(s)"));
+                        "- " + formatCategory(entry.getKey(), messageService) + ": "
+                                + messageService.getMessage("event.count", entry.getValue().size())));
 
-        System.out.println("\nVenue usage guide:");
+        System.out.println("\n" + messageService.getMessage("venue.usage.guide"));
         venueService.getVenuesSortedByCapacity().forEach(venue ->
-                System.out.println("- " + venue.name() + ": " + describeSupportedPurposes(venue, bookingService)));
+                System.out.println("- " + venue.name() + ": "
+                        + describeSupportedPurposes(venue, bookingService, messageService)));
 
-        System.out.println("\nCatalogue details:");
-        System.out.println("- Event codes: " + eventLookup.keySet().stream().sorted().toList());
-        System.out.println("- Active categories: "
-                + eventService.getDistinctCategories().stream().map(CollegeEventApp::formatLabel).toList());
-        System.out.println("- Venue capacity bands: " + venueService.getUniqueSortedCapacities());
+        System.out.println("\n" + messageService.getMessage("catalogue.details"));
+        System.out.println("- " + messageService.getMessage(
+                "event.codes",
+                eventLookup.keySet().stream().sorted().toList()));
+        System.out.println("- " + messageService.getMessage(
+                "active.categories",
+                eventService.getDistinctCategories().stream()
+                        .map(category -> formatCategory(category, messageService))
+                        .toList()));
+        System.out.println("- " + messageService.getMessage(
+                "venue.capacity.bands",
+                venueService.getUniqueSortedCapacities()));
 
         List<CollegeEvent> highlightedEvents = eventService.getTop2Events();
         if (!highlightedEvents.isEmpty()) {
-            System.out.println("\nHighlighted events:");
-            highlightedEvents.forEach(System.out::println);
+            System.out.println("\n" + messageService.getMessage("events.highlighted"));
+            highlightedEvents.forEach(event -> System.out.println(formatEvent(event, messageService)));
         }
 
         System.out.println();
-        EventLambdaService.processEventsWithLambdas(eventService.getAllEvents());
+        EventLambdaService.processEventsWithLambdas(eventService.getAllEvents(), messageService);
 
-        System.out.println("\nSchedule batches:");
+        System.out.println("\n" + messageService.getMessage("schedule.batches"));
         eventService.getEventTitleWindows(2)
                 .forEach(window -> System.out.println("- " + window));
 
-        System.out.println("\nTimeline:");
-        eventService.getEventCountdowns().forEach(line -> System.out.println("- " + line));
+        System.out.println("\n" + messageService.getMessage("timeline"));
+        eventService.getAllEvents().stream()
+                .sorted(Comparator.comparing(CollegeEvent::getDate))
+                .map(event -> formatCountdown(event, messageService))
+                .forEach(line -> System.out.println("- " + line));
     }
 
     private static BookingPurpose promptForBookingPurpose(
             Scanner sc,
             Venue selectedVenue,
-            BookingService bookingService) {
+            BookingService bookingService,
+            MessageService messageService) {
         List<BookingPurpose> availablePurposes = List.of(BookingPurpose.values()).stream()
                 .filter(purpose -> bookingService.isPurposeSupported(selectedVenue, purpose))
                 .toList();
 
-        System.out.println("Selected venue: " + selectedVenue);
-        System.out.println("Available booking types:");
+        System.out.println(messageService.getMessage("venue.selected", formatVenue(selectedVenue, messageService)));
+        System.out.println(messageService.getMessage("booking.types.available"));
         for (int index = 0; index < availablePurposes.size(); index++) {
-            System.out.println((index + 1) + ". " + formatLabel(availablePurposes.get(index).name()));
+            System.out.println((index + 1) + ". " + formatPurpose(availablePurposes.get(index), messageService));
         }
-        System.out.print("Choose booking type: ");
+        System.out.print(messageService.getMessage("prompt.booking.type"));
 
         try {
             int selectedIndex = Integer.parseInt(sc.nextLine());
@@ -541,20 +635,91 @@ public class CollegeEventApp {
         return null;
     }
 
-    private static String describeSupportedPurposes(Venue venue, BookingService bookingService) {
+    private static String describeSupportedPurposes(
+            Venue venue,
+            BookingService bookingService,
+            MessageService messageService) {
         return List.of(BookingPurpose.values()).stream()
                 .filter(purpose -> bookingService.isPurposeSupported(venue, purpose))
-                .map(purpose -> formatLabel(purpose.name()))
+                .map(purpose -> formatPurpose(purpose, messageService))
                 .toList()
                 .toString();
     }
 
-    private static String yesNo(boolean value) {
-        return value ? "Yes" : "No";
+    private static String yesNo(boolean value, MessageService messageService) {
+        return value ? messageService.getMessage("label.yes") : messageService.getMessage("label.no");
     }
 
-    private static String formatLabel(String value) {
-        String formatted = value.toLowerCase().replace('_', ' ');
-        return Character.toUpperCase(formatted.charAt(0)) + formatted.substring(1);
+    private static String formatEvent(CollegeEvent event, MessageService messageService) {
+        return messageService.getMessage(
+                "event.display",
+                event.getEventId(),
+                event.getTitle(),
+                formatCategory(event.getCategory(), messageService),
+                event.getDate());
     }
+
+    private static String formatEventOrNone(Optional<CollegeEvent> event, MessageService messageService) {
+        return event.map(value -> formatEvent(value, messageService))
+                .orElse(messageService.getMessage("label.none"));
+    }
+
+    private static String formatVenue(Venue venue, MessageService messageService) {
+        return messageService.getMessage(
+                "venue.display",
+                venue.id(),
+                venue.name(),
+                venue.capacity(),
+                formatVenueType(venue.type(), messageService));
+    }
+
+    private static String formatBooking(EventBooking booking, MessageService messageService) {
+        return messageService.getMessage(
+                "booking.display",
+                booking.getBookingId(),
+                booking.getBookedBy().getName(),
+                formatPurpose(booking.getPurpose(), messageService),
+                booking.getBookingTitle(),
+                booking.getVenue().name(),
+                booking.getBookingDate(),
+                booking.getBookingTime(),
+                formatStatus(booking.getStatus(), messageService));
+    }
+
+    private static String formatCountdown(CollegeEvent event, MessageService messageService) {
+        Period timeUntil = event.getTimeUntilEvent();
+        long totalDays = ChronoUnit.DAYS.between(LocalDate.now(), event.getDate());
+
+        if (totalDays >= 0) {
+            return messageService.getMessage(
+                    "event.countdown.future",
+                    event.getTitle(),
+                    totalDays,
+                    timeUntil.getMonths(),
+                    timeUntil.getDays());
+        }
+
+        return messageService.getMessage("event.countdown.past", event.getTitle(), Math.abs(totalDays));
+    }
+
+    private static String formatCategory(EventCategory category, MessageService messageService) {
+        return formatCategory(category.name(), messageService);
+    }
+
+    private static String formatCategory(String category, MessageService messageService) {
+        return messageService.getMessage("category." + category.toLowerCase());
+    }
+
+    private static String formatVenueType(VenueType type, MessageService messageService) {
+        return messageService.getMessage("venue.type." + type.name().toLowerCase());
+    }
+
+    private static String formatPurpose(BookingPurpose purpose, MessageService messageService) {
+        return messageService.getMessage("booking.purpose." + purpose.name().toLowerCase());
+    }
+
+    private static String formatStatus(BookingStatus status, MessageService messageService) {
+        return messageService.getMessage("booking.status." + status.name().toLowerCase());
+    }
+
 }

@@ -22,10 +22,6 @@ public class BookingService {
     private final List<EventBooking> bookings = new CopyOnWriteArrayList<>();
     private final AtomicInteger bookingCounter = new AtomicInteger(1);
 
-    public BookingService() {
-        System.out.println("Booking Service Initialised");
-    }
-
     private final Supplier<String> bookingIdSupplier =
             () -> "B" + bookingCounter.getAndIncrement();
 

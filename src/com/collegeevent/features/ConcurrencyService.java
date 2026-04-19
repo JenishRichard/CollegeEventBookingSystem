@@ -9,6 +9,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import com.collegeevent.localisation.MessageService;
 import com.collegeevent.model.CollegeEvent;
 import com.collegeevent.model.EventBooking;
 import com.collegeevent.model.User;
@@ -16,6 +17,16 @@ import com.collegeevent.model.Venue;
 import com.collegeevent.service.BookingService;
 
 public class ConcurrencyService {
+
+    private final MessageService messageService;
+
+    public ConcurrencyService() {
+        this(new MessageService());
+    }
+
+    public ConcurrencyService(MessageService messageService) {
+        this.messageService = messageService;
+    }
 
     public List<EventBooking> simulateConcurrentBookings(
             BookingService bookingService,
@@ -51,9 +62,9 @@ public class ConcurrencyService {
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            System.out.println("Booking simulation interrupted.");
+            System.out.println(messageService.getMessage("booking.simulation.interrupted"));
         } catch (ExecutionException e) {
-            System.out.println("Error while processing booking task: " + e.getMessage());
+            System.out.println(messageService.getMessage("booking.task.error", e.getMessage()));
         } finally {
             executorService.shutdown();
         }

@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 
+import com.collegeevent.localisation.MessageService;
 import com.collegeevent.model.EventBooking;
 
 public class FileStorageService {
@@ -14,6 +15,10 @@ public class FileStorageService {
     private final Path bookingFilePath = Path.of("target", "data", "bookings.txt");
 
     public void saveBookings(List<EventBooking> bookings) {
+        saveBookings(bookings, new MessageService());
+    }
+
+    public void saveBookings(List<EventBooking> bookings, MessageService messageService) {
         try {
             List<String> lines = bookings.stream()
                     .map(EventBooking::toString)
@@ -28,23 +33,27 @@ public class FileStorageService {
                     StandardOpenOption.TRUNCATE_EXISTING
             );
 
-            System.out.println("Bookings saved to " + bookingFilePath.toAbsolutePath());
+            System.out.println(messageService.getMessage("bookings.saved", bookingFilePath.toAbsolutePath()));
         } catch (IOException e) {
-            System.out.println("Error saving bookings: " + e.getMessage());
+            System.out.println(messageService.getMessage("bookings.save.error", e.getMessage()));
         }
     }
 
     public void readBookingsFromFile() {
+        readBookingsFromFile(new MessageService());
+    }
+
+    public void readBookingsFromFile(MessageService messageService) {
         try {
             if (Files.exists(bookingFilePath)) {
                 List<String> lines = Files.readAllLines(bookingFilePath, StandardCharsets.UTF_8);
-                System.out.println("Saved Bookings:");
+                System.out.println(messageService.getMessage("bookings.saved.heading"));
                 lines.forEach(System.out::println);
             } else {
-                System.out.println("Booking file does not exist.");
+                System.out.println(messageService.getMessage("bookings.file.missing"));
             }
         } catch (IOException e) {
-            System.out.println("Error reading bookings: " + e.getMessage());
+            System.out.println(messageService.getMessage("bookings.read.error", e.getMessage()));
         }
     }
 }

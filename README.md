@@ -1,6 +1,6 @@
 # College Event Booking System
 
-This project is set up as an OOP2 assignment showcase for Java language fundamentals, advanced APIs, and Java 25 features. The app uses automatic locale detection with English fallback, so there is no language-selection menu.
+This project is set up as an OOP2 assignment showcase for Java language fundamentals, advanced APIs, and Java 25 features. The app asks the user to choose English or Irish at startup, then uses the selected locale through `MessageService` with English fallback.
 
 ## Feature coverage
 
@@ -19,7 +19,7 @@ This project is set up as an OOP2 assignment showcase for Java language fundamen
 ### Advanced
 - Concurrency using `ExecutorService`, `Callable`, and `Future` in `ConcurrencyService`
 - NIO2 file handling in `FileStorageService`
-- Localisation with `ResourceBundle` in `MessageService`, automatic locale detection, and English/Irish bundles
+- Localisation with `ResourceBundle` in `MessageService`, startup language selection, and English/Irish bundles
 - Java 25 compact source files and instance main methods in `src/CompactEventLauncher.java`
 - Java 25 flexible constructor bodies in `BookingRequest`
 
@@ -40,7 +40,7 @@ Copy-Item src\*.properties target\classes
 java --enable-preview -cp target\classes com.collegeevent.app.CollegeEventApp
 ```
 
-To demonstrate localisation explicitly, you can run with an Irish JVM locale:
+The startup language menu demonstrates localisation directly. You can still run with an Irish JVM locale if you want the JVM default to be Irish:
 
 ```powershell
 java -Duser.language=ga -Duser.country=IE --enable-preview -cp target\classes com.collegeevent.app.CollegeEventApp

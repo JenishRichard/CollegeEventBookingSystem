@@ -6,11 +6,16 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import com.collegeevent.localisation.MessageService;
 import com.collegeevent.model.CollegeEvent;
 
 public class EventLambdaService {
 
     public static void processEventsWithLambdas(List<CollegeEvent> events) {
+        processEventsWithLambdas(events, new MessageService());
+    }
+
+    public static void processEventsWithLambdas(List<CollegeEvent> events, MessageService messageService) {
 
         Predicate<CollegeEvent> isSeminar =
                 event -> event.getCategory().name().equalsIgnoreCase("SEMINAR");
@@ -22,7 +27,7 @@ public class EventLambdaService {
                 title -> System.out.println("- " + title);
 
         Supplier<String> message =
-                () -> "Featured seminar events:";
+                () -> messageService.getMessage("events.featured.seminars");
 
         System.out.println(message.get());
 
