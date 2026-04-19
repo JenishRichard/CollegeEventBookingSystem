@@ -23,7 +23,7 @@ This project is set up as an OOP2 assignment showcase for Java language fundamen
 - Java 25 compact source files and instance main methods in `src/CompactEventLauncher.java`
 - Java 25 flexible constructor bodies in `BookingRequest`
 
-### Extra marks
+### Extra
 - Scoped Values in `UserContextManager`
 - Stream Gatherers in `EventService#getEventTitleWindows`
 
