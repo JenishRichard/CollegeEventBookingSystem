@@ -46,7 +46,7 @@ public class CollegeEventApp {
         try (Scanner sc = new Scanner(System.in)) {
             Locale selectedLocale = selectLocale(sc);
             MessageService messageService = new MessageService(selectedLocale);
-
+  
             while (true) {
                 System.out.println("=== " + messageService.getMessage("app.title") + " ===");
                 System.out.println(messageService.getMessage("welcome"));

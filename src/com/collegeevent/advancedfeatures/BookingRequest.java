@@ -37,7 +37,7 @@ public class BookingRequest {
             throw new IllegalArgumentException("Booking date is required");
         }
 
-        if (bookingTime == null) {
+          if (bookingTime == null) {
             throw new IllegalArgumentException("Booking time is required");
         }
 
